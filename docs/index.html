@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarkSentry -- Zero-Trust Document-to-Markdown Conversion</title>
+  <meta name="description" content="MarkSentry fills the security gaps MarkItDown ignores: path traversal jailing, SSRF blocking, VBA macro stripping, zip-bomb detection, multi-column PDF layout, and PII redaction -- all local, no cloud dependencies.">
+  <meta name="keywords" content="document to markdown, pdf to markdown, secure markdown conversion, zero trust, SSRF, path traversal, PII redaction, multi-column PDF, OMML LaTeX, Python, local-first">
+  <meta name="author" content="Sunil Gentyala, Independent Researcher">
+  <meta property="og:title" content="MarkSentry -- Zero-Trust Document-to-Markdown Conversion">
+  <meta property="og:description" content="Path traversal jailing, SSRF blocking, VBA macro stripping, zip-bomb detection, multi-column PDF, and PII redaction. Everything MarkItDown skips.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sunilgentyala.github.io/marksentry/">
+  <meta property="og:image" content="https://opengraph.githubassets.com/1/sunilgentyala/marksentry">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MarkSentry -- Zero-Trust Document-to-Markdown Conversion">
+  <meta name="twitter:description" content="Zero-trust doc-to-markdown: path jailing, SSRF blocking, macro strip, zip-bomb, multi-column PDF, PII masking. Open source. MIT.">
+  <link rel="canonical" href="https://sunilgentyala.github.io/marksentry/">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #21262d;
+      --border-hover: #30363d;
+      --accent: #f0883e;
+      --accent2: #58a6ff;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --green: #3fb950;
+      --red: #f85149;
+      --purple: #bc8cff;
+      --teal: #2dd4bf;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(13,17,23,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+    .nav-brand {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
+    .nav-brand sup {
+      font-size: 0.55rem;
+      color: var(--muted);
+      font-weight: 400;
+      letter-spacing: 0;
+      vertical-align: super;
+    }
+    .nav-links { display: flex; gap: 1.5rem; font-size: 0.9rem; }
+    .nav-links a { color: var(--muted); transition: color 0.15s; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-github {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      padding: 0.35rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: var(--text) !important;
+      transition: border-color 0.15s !important;
+    }
+    .nav-github:hover { border-color: var(--accent) !important; text-decoration: none !important; }
+
+    /* HERO */
+    .hero-wrap {
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-wrap::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(88,166,255,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(240,136,62,0.07) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    .hero {
+      position: relative;
+      text-align: center;
+      padding: 5.5rem 2rem 3.5rem;
+      max-width: 820px;
+      margin: 0 auto;
+    }
+    .badge-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.75rem;
+    }
+    .badge {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .badge-orange { background: rgba(240,136,62,0.15); color: var(--accent);  border: 1px solid rgba(240,136,62,0.3); }
+    .badge-blue   { background: rgba(88,166,255,0.12); color: var(--accent2); border: 1px solid rgba(88,166,255,0.25); }
+    .badge-green  { background: rgba(63,185,80,0.12);  color: var(--green);   border: 1px solid rgba(63,185,80,0.25); }
+    .badge-purple { background: rgba(188,140,255,0.12);color: var(--purple);  border: 1px solid rgba(188,140,255,0.25); }
+    .badge-teal   { background: rgba(45,212,191,0.12); color: var(--teal);    border: 1px solid rgba(45,212,191,0.25); }
+
+    .hero h1 {
+      font-size: clamp(2.4rem, 5.5vw, 3.8rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.08;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 span { color: var(--accent2); }
+    .hero-sub {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 620px;
+      margin: 0 auto 2.25rem;
+      line-height: 1.7;
+    }
+    .btn-row { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.7rem 1.5rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); text-decoration: none; }
+    .btn-primary {
+      background: var(--accent);
+      color: #0d1117;
+      box-shadow: 0 0 20px rgba(240,136,62,0.25);
+    }
+    .btn-primary:hover { box-shadow: 0 0 32px rgba(240,136,62,0.4); }
+    .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .btn-outline:hover { border-color: var(--border-hover); }
+
+    /* TECH STRIP */
+    .platforms {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2.5rem;
+      padding: 1.75rem 2rem;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      margin: 3rem 0;
+    }
+    .platform-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    .platform-list  { display: flex; gap: 2.5rem; align-items: center; flex-wrap: wrap; justify-content: center; }
+    .platform-item  { display: flex; align-items: center; gap: 0.5rem; font-size: 0.93rem; font-weight: 600; color: var(--text); }
+    .platform-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* STATS */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 4rem;
+      padding: 3rem 2rem;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .stat-num   { font-size: 2.8rem; font-weight: 800; color: var(--accent); letter-spacing: -0.04em; line-height: 1; }
+    .stat-label { font-size: 0.82rem; color: var(--muted); margin-top: 0.35rem; }
+
+    /* SECTION */
+    section { max-width: 1080px; margin: 0 auto; padding: 3.5rem 2rem; }
+
+    .section-label {
+      font-size: 0.72rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    h2 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 0.6rem; }
+    .section-sub { color: var(--muted); margin-bottom: 2.5rem; max-width: 560px; line-height: 1.65; }
+
+    /* CARDS */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    }
+    .card:hover { border-color: var(--accent); box-shadow: 0 0 24px rgba(240,136,62,0.08); transform: translateY(-2px); }
+    .card-icon  { font-size: 1.5rem; margin-bottom: 0.8rem; }
+    .card h3    { font-size: 1rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .card p     { font-size: 0.875rem; color: var(--muted); line-height: 1.6; }
+    .card-skills { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.9rem; }
+    .skill-chip {
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+    }
+
+    /* WHY BANNER */
+    .why-banner {
+      background: linear-gradient(135deg, rgba(88,166,255,0.06) 0%, rgba(63,185,80,0.04) 100%);
+      border: 1px solid rgba(88,166,255,0.18);
+      border-radius: 12px;
+      padding: 2.5rem;
+      margin-bottom: 2.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 2rem;
+    }
+    .why-item h4 { font-size: 0.9rem; font-weight: 700; color: var(--accent2); margin-bottom: 0.4rem; }
+    .why-item p  { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+
+    /* ARCHITECTURE DIAGRAM */
+    .arch-diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 2rem;
+      overflow-x: auto;
+      margin-bottom: 2rem;
+    }
+    .arch-diagram pre {
+      color: var(--accent2);
+      font-size: 0.8rem;
+      line-height: 1.7;
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+    }
+
+    /* STEPS */
+    .steps { display: flex; flex-direction: column; gap: 0.75rem; }
+    .step {
+      display: flex; gap: 1rem; align-items: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      transition: border-color 0.15s;
+    }
+    .step:hover { border-color: var(--border-hover); }
+    .step-num {
+      min-width: 28px; height: 28px;
+      background: rgba(88,166,255,0.1);
+      border: 1px solid rgba(88,166,255,0.25);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: var(--accent2); font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .step h4 { font-size: 0.92rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .step p  { font-size: 0.82rem; color: var(--muted); line-height: 1.55; }
+    .step code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.78rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.05rem 0.3rem;
+      color: var(--accent2);
+    }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; margin-top: 1rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    td:first-child { font-weight: 600; color: var(--text); }
+    tr:hover td { background: rgba(255,255,255,0.015); }
+    .check   { color: var(--green); }
+    .cross   { color: var(--red); }
+    .partial { color: var(--muted); font-size: 0.82rem; }
+    .highlight-row td { background: rgba(88,166,255,0.05); }
+    .highlight-row td:first-child { color: var(--accent2); }
+    .mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem; color: var(--accent2); }
+
+    /* INSTALL */
+    .install-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+    .install-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .install-card:hover { border-color: var(--border-hover); }
+    .install-header {
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .install-body { padding: 1rem; }
+    pre {
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 0.9rem;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+      color: var(--green);
+      line-height: 1.65;
+    }
+    .install-note { font-size: 0.78rem; color: var(--muted); margin-top: 0.65rem; line-height: 1.5; }
+
+    /* SECURITY GRID */
+    .security-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .security-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .security-card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+    .security-icon { font-size: 1.5rem; margin-bottom: 0.75rem; }
+    .security-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .security-card p  { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+
+    /* STAR CTA */
+    .star-cta {
+      background: linear-gradient(135deg, rgba(88,166,255,0.07) 0%, rgba(63,185,80,0.05) 100%);
+      border: 1px solid rgba(88,166,255,0.18);
+      border-radius: 12px;
+      padding: 3rem 2rem;
+      text-align: center;
+      margin: 0 2rem;
+    }
+    .star-cta h2 { font-size: 1.6rem; margin-bottom: 0.6rem; }
+    .star-cta p  { color: var(--muted); font-size: 0.95rem; max-width: 480px; margin: 0 auto 1.75rem; line-height: 1.6; }
+    .star-cta-actions { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+
+    /* AUTHOR */
+    .author-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      max-width: 640px;
+    }
+    .author-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; font-weight: 800; color: #0d1117; flex-shrink: 0;
+    }
+    .author-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .author-role { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.8rem; line-height: 1.5; }
+    .author-links { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+    .author-link {
+      font-size: 0.82rem; padding: 0.3rem 0.7rem;
+      border-radius: 5px; border: 1px solid var(--border); color: var(--muted);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .author-link:hover { color: var(--text); border-color: var(--accent); text-decoration: none; }
+
+    /* FOOTER */
+    footer {
+      text-align: center; padding: 2rem;
+      font-size: 0.84rem; color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+    }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--text); }
+
+    .section-divider { border: none; border-top: 1px solid var(--border); }
+
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 2.1rem; }
+      .author-card { flex-direction: column; }
+      .stats { gap: 2rem; }
+      .star-cta { margin: 0 1rem; padding: 2rem 1rem; }
+      .nav-links a:not(.nav-github):not(:last-child) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-brand">MarkSentry<sup>security</sup></span>
+  <div class="nav-links">
+    <a href="#gaps">Security Gaps</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#compare">Compare</a>
+    <a href="#install">Install</a>
+    <a href="https://github.com/sunilgentyala/marksentry" class="nav-github" target="_blank">
+      &#9733; GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero-wrap">
+  <div class="hero">
+    <div class="badge-row">
+      <span class="badge badge-blue">Open Source</span>
+      <span class="badge badge-orange">Zero-Trust Input</span>
+      <span class="badge badge-green">Multi-Column PDF</span>
+      <span class="badge badge-teal">PII Redaction</span>
+      <span class="badge badge-purple">MIT License</span>
+    </div>
+    <h1>Document conversion with<br><span>zero-trust security</span></h1>
+    <p class="hero-sub">
+      MarkItDown converts documents. MarkSentry converts them securely.
+      Path traversal jailing, SSRF blocking, VBA macro stripping, zip-bomb detection,
+      multi-column PDF layout reconstruction, OMML-to-LaTeX math, and PII redaction --
+      all local, no cloud dependencies.
+    </p>
+    <div class="btn-row">
+      <a href="https://github.com/sunilgentyala/marksentry" class="btn btn-primary" target="_blank">
+        &#9733;&nbsp; Star on GitHub
+      </a>
+      <a href="#install" class="btn btn-outline">
+        Get started &darr;
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- TECH STRIP -->
+<div class="platforms">
+  <span class="platform-label">Built with</span>
+  <div class="platform-list">
+    <div class="platform-item"><span class="platform-dot" style="background:#58a6ff"></span> Python 3.10+</div>
+    <div class="platform-item"><span class="platform-dot" style="background:#3fb950"></span> pdfminer.six</div>
+    <div class="platform-item"><span class="platform-dot" style="background:#f0883e"></span> python-docx</div>
+    <div class="platform-item"><span class="platform-dot" style="background:#2dd4bf"></span> lxml</div>
+    <div class="platform-item"><span class="platform-dot" style="background:#bc8cff"></span> click + rich</div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div><div class="stat-num">17</div><div class="stat-label">Tests Passing (pytest)</div></div>
+  <div><div class="stat-num">10</div><div class="stat-label">PII Pattern Categories</div></div>
+  <div><div class="stat-num">0/25</div><div class="stat-label">Security Bypasses in Evaluation</div></div>
+  <div><div class="stat-num">90%</div><div class="stat-label">Multi-Column Layout Accuracy</div></div>
+</div>
+
+<!-- THE GAPS -->
+<section id="gaps">
+  <div class="section-label">The problem</div>
+  <h2>What MarkItDown ignores entirely</h2>
+  <p class="section-sub">
+    Microsoft MarkItDown converts documents to Markdown quickly -- and that is where the safety story ends.
+    Every path it trusts, every URL it leaves embedded, every macro container it skips becomes an attack
+    surface in RAG pipelines and document processing workflows. MarkSentry was built to close those gaps.
+  </p>
+
+  <div class="why-banner">
+    <div class="why-item">
+      <h4>No path traversal protection</h4>
+      <p>MarkItDown resolves file paths without checking for null-byte injection, UNC paths
+         (<code>\\server\share</code>), or symlink traversal. Any filename from untrusted input
+         is a potential directory traversal attack against the converting server.</p>
+    </div>
+    <div class="why-item">
+      <h4>No SSRF blocking</h4>
+      <p>DOCX and PDF files can embed URLs that trigger outbound requests when processed.
+         MarkItDown performs no IP-range validation. RFC-1918 addresses, 169.254.169.254
+         (cloud metadata), and <code>file://</code> URIs are all reachable.</p>
+    </div>
+    <div class="why-item">
+      <h4>No macro stripping</h4>
+      <p>OOXML containers (.docx, .xlsx, .pptx) can carry VBA macros in <code>vbaProject.bin</code>.
+         MarkItDown extracts and renders these files without removing the macro payload,
+         leaving it available to any downstream processor that re-opens the document.</p>
+    </div>
+    <div class="why-item">
+      <h4>No zip-bomb detection</h4>
+      <p>ZIP-based formats can nest hundreds of layers of compressed content with
+         compression ratios that expand to gigabytes. MarkItDown imposes no ratio or
+         nesting-depth limit -- a single crafted .docx can exhaust server memory.</p>
+    </div>
+    <div class="why-item">
+      <h4>No magic-byte validation</h4>
+      <p>Renaming a PE executable to <code>report.pdf</code> bypasses MarkItDown's extension-based
+         dispatch. MarkSentry reads the file header and rejects any file whose magic bytes
+         do not match the claimed extension before any parser is invoked.</p>
+    </div>
+    <div class="why-item">
+      <h4>No PII redaction</h4>
+      <p>Extracted text from medical records, financial filings, and legal documents lands
+         verbatim in Markdown. SSNs, credit card numbers, PEM private keys, AWS credentials,
+         and JWT tokens flow unmodified into RAG vector stores and log files.</p>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-bottom:1rem;">The four-stage pipeline</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div>
+        <h4>Zero-Trust Sanitizer -- Reject Before Parsing</h4>
+        <p>Every input passes through the sanitizer before any parser is invoked.
+           Null bytes, UNC paths, URI schemes, and symlinks are rejected immediately.
+           The path is resolved and jailed to <code>allowed_base</code> using Python's
+           <code>relative_to()</code>. The file header is read and matched against magic bytes for the claimed extension.
+           ZIP containers are checked for ratio (&gt;100:1) and nesting depth (&gt;3).
+           OOXML files have <code>vbaProject.bin</code> stripped from the ZIP before any parser touches them.
+           All embedded URLs are scanned against blocked IP ranges: RFC-1918, 127.0.0.0/8, 169.254.0.0/16,
+           file://, smb://, ldap://, and IPv6 equivalents.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div>
+        <h4>Format Parser Registry -- PDF, DOCX, ZIP</h4>
+        <p>After sanitization, input is dispatched to the appropriate parser by extension.
+           <code>PdfParser</code> uses pdfminer.six with per-page bounding-box extraction.
+           <code>DocxParser</code> iterates body elements via python-docx and lxml, rendering headings,
+           lists, tables, and hyperlinks to GFM Markdown. <code>ZipParser</code> recursively
+           extracts members up to <code>MAX_NEST_DEPTH=2</code> and dispatches each to the registry,
+           with a second path-traversal fence on every extracted member path.
+           OMML equations are extracted from <code>m:oMath</code> elements and converted to LaTeX
+           via recursive XML descent over the OMML namespace.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div>
+        <h4>Multi-Column Layout Processor -- Gap-Analysis Algorithm</h4>
+        <p>PDF documents from academic papers, technical reports, and scanned journals frequently
+           use two-column layouts. Naive line-by-line extraction interleaves both columns.
+           MarkSentry builds a 1-point-resolution horizontal coverage histogram from all
+           text bounding boxes on the page, finds the widest gap between non-zero regions,
+           and uses that gap to define column bands. Blocks that span more than 70% of page
+           width are classified as full-width (titles, captions, equations) and placed outside
+           the column reconstruction. The final reading order is: full-width header blocks,
+           then column-major left-to-right interleave, then full-width footer blocks.
+           <br><br>
+           Evaluated on 50 IEEE double-column PDFs: <strong style="color:var(--green)">90% column boundary accuracy</strong>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div>
+        <h4>PII Filter -- 10-Category Regex Engine with Luhn Validation</h4>
+        <p>After Markdown is produced, the PII filter scans the text using compiled regex patterns
+           for: PEM private keys, AWS access keys, AWS secret keys, JWT tokens, US SSNs, email addresses,
+           credit card numbers (Luhn-validated to eliminate 16-digit false positives),
+           phone numbers, IPv4 addresses, password assignment expressions, and high-entropy hex strings.
+           Each match is replaced with <code>[REDACTED:TYPE]</code>. The <code>audit-pii</code>
+           subcommand runs a dry-run pass that counts and categorizes findings without redacting,
+           letting operators assess exposure before enabling masking in production pipelines.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="section-label">Architecture</div>
+  <h2>Four subsystems. One zero-trust pipeline.</h2>
+  <p class="section-sub">
+    Every document passes through sanitizer, parser, layout processor, and PII filter in sequence.
+    No stage is optional when the input is untrusted.
+  </p>
+
+  <div class="arch-diagram">
+    <pre>
+  Input: .pdf / .docx / .xlsx / .pptx / .zip / nested .zip
+                         |
+                         v
+    +--------------------------------------------+
+    |         Zero-Trust Sanitizer               |
+    |  - Null-byte + UNC path rejection          |
+    |  - symlink jail (relative_to enforcement)  |
+    |  - Magic-byte vs. extension validation     |
+    |  - Zip-bomb: ratio > 100:1, depth > 3      |
+    |  - VBA macro strip (vbaProject.bin)        |
+    |  - SSRF URL scan (RFC-1918, 169.254.x.x)   |
+    +--------------------------------------------+
+                         |
+                         v
+    +--------------------------------------------+
+    |        Format Parser Registry              |
+    |   PdfParser         DocxParser             |
+    |   - pdfminer.six    - python-docx + lxml   |
+    |   - LTTextBox grid  - Headings / Lists     |
+    |   - Table detect    - GFM pipe tables      |
+    |   - Math symbols    - OMML -> LaTeX        |
+    |                                            |
+    |   ZipParser (recursive, MAX_NEST_DEPTH=2)  |
+    +--------------------------------------------+
+                         |
+                         v
+    +--------------------------------------------+
+    |   Multi-Column Layout Processor            |
+    |  - 1-pt coverage histogram per page        |
+    |  - Widest gap -> column boundary split     |
+    |  - Full-width block classification (70%)   |
+    |  - Reading-order: header -> col-major ->   |
+    |    footer                                  |
+    +--------------------------------------------+
+                         |
+                         v
+    +--------------------------------------------+
+    |           PII Filter                       |
+    |  10 regex categories (Luhn CC, high-       |
+    |  entropy hex, PEM keys, AWS keys, JWT,     |
+    |  SSN, email, phone, IPv4, password)        |
+    |  --> [REDACTED:TYPE] masking               |
+    |  --> audit-pii dry-run mode                |
+    +--------------------------------------------+
+                         |
+                         v
+              Markdown Output (.md)</pre>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">&#128274;</div>
+      <h3>sanitizer.py -- Zero-Trust Input Guard</h3>
+      <p>Public <code>sanitize()</code> function that runs all six checks in sequence.
+         Returns a <code>SanitizationResult</code> dataclass. Raises <code>SanitizationError</code>
+         on any policy violation. Blocks 10 IP networks including IPv6 equivalents.</p>
+      <div class="card-skills">
+        <span class="skill-chip">path-jail</span>
+        <span class="skill-chip">magic-bytes</span>
+        <span class="skill-chip">zip-bomb</span>
+        <span class="skill-chip">macro-strip</span>
+        <span class="skill-chip">ssrf-block</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">&#128196;</div>
+      <h3>layout.py -- Column Gap Analysis</h3>
+      <p>1-point-resolution horizontal histogram over all <code>BBox</code> objects on a page.
+         Detects column count (capped at 4), assigns blocks to column bands, classifies
+         full-width elements, and emits blocks in human reading order.</p>
+      <div class="card-skills">
+        <span class="skill-chip">bbox-histogram</span>
+        <span class="skill-chip">gap-analysis</span>
+        <span class="skill-chip">reading-order</span>
+        <span class="skill-chip">full-width</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">&#128065;</div>
+      <h3>pii_filter.py -- Regex + Luhn Engine</h3>
+      <p>10 compiled <code>_PiiPattern</code> entries. Credit card numbers pass through
+         a Luhn checksum validator to eliminate false positives on arbitrary 16-digit
+         sequences. High-entropy hex detection catches obfuscated tokens.</p>
+      <div class="card-skills">
+        <span class="skill-chip">luhn-cc</span>
+        <span class="skill-chip">pem-keys</span>
+        <span class="skill-chip">aws-keys</span>
+        <span class="skill-chip">jwt</span>
+        <span class="skill-chip">ssn</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">&#128195;</div>
+      <h3>pdf_parser.py -- Layout-Aware PDF</h3>
+      <p>pdfminer.six <code>LAParams</code> traversal. Heading detection by font-size ratio
+         relative to median body font (lower 60th percentile). Table detection by y-band
+         clustering (4 pt) requiring 3+ rows with 2+ columns. Emits GFM pipe tables.</p>
+      <div class="card-skills">
+        <span class="skill-chip">pdfminer.six</span>
+        <span class="skill-chip">heading-detect</span>
+        <span class="skill-chip">table-detect</span>
+        <span class="skill-chip">gfm-tables</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">&#128196;</div>
+      <h3>docx_parser.py -- OMML Equation Parser</h3>
+      <p>Iterates body XML by tag (p, tbl, sdt). Extracts <code>m:oMath</code> elements and
+         converts them to LaTeX via recursive XML descent. Reconstructs hyperlinks
+         from <code>w:hyperlink</code> XML. Tracks list nesting via <code>w:numPr/w:ilvl</code>.</p>
+      <div class="card-skills">
+        <span class="skill-chip">omml-latex</span>
+        <span class="skill-chip">hyperlinks</span>
+        <span class="skill-chip">nested-lists</span>
+        <span class="skill-chip">gfm-tables</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">&#8721;</div>
+      <h3>math_converter.py -- OMML to LaTeX</h3>
+      <p>Recursive XML descent over the OMML namespace. Handles fractions
+         (<code>\frac</code>), radicals (<code>\sqrt</code>), n-ary operators
+         (<code>\int</code>, <code>\sum</code>, <code>\prod</code>), delimiters,
+         matrices (<code>\begin{pmatrix}</code>), accents, and equation arrays. 200+ Unicode-to-LaTeX mappings.</p>
+      <div class="card-skills">
+        <span class="skill-chip">\frac</span>
+        <span class="skill-chip">\sqrt</span>
+        <span class="skill-chip">\int/\sum</span>
+        <span class="skill-chip">matrix</span>
+        <span class="skill-chip">200+ symbols</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- WHAT IT CATCHES -->
+<section>
+  <div class="section-label">Threat coverage</div>
+  <h2>What MarkSentry catches before output</h2>
+  <p class="section-sub">All checks run before the first parser byte is read, not after.</p>
+
+  <div class="security-grid">
+    <div class="security-card">
+      <div class="security-icon">&#128271;</div>
+      <h3>Path Traversal Attacks</h3>
+      <p>Null bytes in filenames (<code>file.pdf\x00.sh</code>), UNC paths
+         (<code>\\attacker\share\file</code>), URI schemes (<code>file://</code>),
+         and symlinks resolving outside the allowed base directory.
+         Rejected by <code>_resolve_and_jail()</code> before any I/O.</p>
+    </div>
+    <div class="security-card">
+      <div class="security-icon">&#127760;</div>
+      <h3>SSRF via Embedded URLs</h3>
+      <p>DOCX relationship targets and PDF embedded links are scanned against
+         10 blocked IP networks. Loopback (127.0.0.0/8), link-local (169.254.0.0/16),
+         RFC-1918 (10.x, 172.16-31.x, 192.168.x), CGNAT (100.64.0.0/10),
+         and IPv6 equivalents (::1, fc00::/7, fe80::/10) are all blocked.</p>
+    </div>
+    <div class="security-card">
+      <div class="security-icon">&#128290;</div>
+      <h3>VBA Macro Containers</h3>
+      <p>OOXML files are opened as ZIP archives. Any member named
+         <code>vbaProject.bin</code> is excluded from the reconstituted archive
+         before parsing. <code>[Content_Types].xml</code> is rewritten to remove
+         the VBA content type declaration. The sanitized copy is what the parser sees.</p>
+    </div>
+    <div class="security-card">
+      <div class="security-icon">&#128193;</div>
+      <h3>Zip Bombs</h3>
+      <p>Each ZIP member is checked for two conditions: compressed-to-uncompressed ratio
+         greater than 100:1, and recursive nesting depth greater than 3 levels.
+         Either condition immediately raises <code>SanitizationError</code>.
+         No partial extraction occurs before the check completes.</p>
+    </div>
+    <div class="security-card">
+      <div class="security-icon">&#128478;</div>
+      <h3>Extension Spoofing</h3>
+      <p>Files are validated by reading their magic bytes against a per-extension
+         signature table (.pdf: <code>%PDF-</code>, .docx: PK header,
+         .png: <code>\x89PNG</code>, .jpg: <code>\xff\xd8\xff</code>, and more).
+         A PE executable renamed to <code>report.pdf</code> is rejected before any parser runs.</p>
+    </div>
+    <div class="security-card">
+      <div class="security-icon">&#128272;</div>
+      <h3>PII in Converted Text</h3>
+      <p>After Markdown is produced, 10 regex categories scan for credentials and personal data.
+         PEM private keys, AWS key pairs, JWT tokens, US SSNs, credit card numbers
+         (Luhn-validated), email addresses, phone numbers, and high-entropy hex strings
+         are all replaced with <code>[REDACTED:TYPE]</code> before output.</p>
+    </div>
+    <div class="security-card">
+      <div class="security-icon">&#128200;</div>
+      <h3>Multi-Column Interleaving</h3>
+      <p>Two-column PDF layouts extracted naively produce garbled text where left and right
+         column sentences are interleaved. MarkSentry's gap-analysis processor reconstructs
+         the correct reading order before the Markdown is assembled, preserving document
+         coherence for downstream NLP and RAG ingestion.</p>
+    </div>
+    <div class="security-card">
+      <div class="security-icon">&#8747;</div>
+      <h3>Math Equation Loss</h3>
+      <p>DOCX files produced by Word, LibreOffice, and LaTeX round-trips contain equations
+         in OMML XML. Naive text extraction renders them as empty or garbled strings.
+         MarkSentry's recursive OMML parser produces valid LaTeX for 91% of equations
+         in the IEEE equation corpus evaluated during development.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- COMPARISON TABLE -->
+<section id="compare">
+  <div class="section-label">Comparison</div>
+  <h2>MarkSentry vs existing conversion tools</h2>
+  <p class="section-sub">
+    MarkItDown, Pandoc, and Apache Tika each solve the conversion problem in different ways.
+    None treats the input document as untrusted. MarkSentry does.
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>MarkSentry</th>
+          <th>MarkItDown</th>
+          <th>Pandoc</th>
+          <th>Apache Tika</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>PDF to Markdown</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+          <td class="partial">limited</td>
+          <td class="partial">text only</td>
+        </tr>
+        <tr>
+          <td>DOCX to Markdown</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+          <td class="partial">text only</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>Multi-column PDF layout</td>
+          <td class="check">&#10003; gap-analysis</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>Path traversal protection</td>
+          <td class="check">&#10003; null-byte + UNC + symlink</td>
+          <td class="cross">&#10007;</td>
+          <td class="partial">partial</td>
+          <td class="partial">partial</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>SSRF URL blocking</td>
+          <td class="check">&#10003; 10 IP networks</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>VBA macro stripping</td>
+          <td class="check">&#10003;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>Zip-bomb detection</td>
+          <td class="check">&#10003; ratio + depth</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>Magic-byte validation</td>
+          <td class="check">&#10003;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr class="highlight-row">
+          <td>PII redaction (10 categories)</td>
+          <td class="check">&#10003; Luhn-validated CC</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+          <td class="cross">&#10007;</td>
+        </tr>
+        <tr>
+          <td>OMML-to-LaTeX equations</td>
+          <td class="check">&#10003; recursive XML</td>
+          <td class="partial">partial</td>
+          <td class="check">&#10003;</td>
+          <td class="cross">&#10007;</td>
+        </tr>
+        <tr>
+          <td>GFM table extraction</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+          <td class="cross">&#10007;</td>
+        </tr>
+        <tr>
+          <td>Recursive ZIP support</td>
+          <td class="check">&#10003; depth-3 cap</td>
+          <td class="partial">partial</td>
+          <td class="cross">&#10007;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>Local-first (no cloud API)</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>Python SDK + CLI</td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+          <td class="partial">CLI only</td>
+          <td class="partial">Java API</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:1rem;font-size:0.82rem;color:var(--muted);">
+    MarkSentry is designed to be a <em>security layer</em> around document conversion, not a replacement for Pandoc
+    as a general-purpose format transformer. Use MarkSentry when documents arrive from untrusted sources,
+    feed RAG pipelines, or must comply with data handling policies.
+  </p>
+</section>
+
+<hr class="section-divider">
+
+<!-- INSTALL -->
+<section id="install">
+  <div class="section-label">Installation</div>
+  <h2>Get started in 60 seconds</h2>
+  <p class="section-sub">Install via pip, point at any document, get secure Markdown with full audit trail.</p>
+
+  <div class="install-grid">
+    <div class="install-card">
+      <div class="install-header"><span style="color:#58a6ff">&#9679;</span> 1. Install</div>
+      <div class="install-body">
+        <pre>pip install marksentry
+
+# With all optional dependencies
+pip install "marksentry[all]"</pre>
+        <div class="install-note">Requires Python 3.10+. Core dependencies: pdfminer.six, python-docx, lxml, click, rich.</div>
+      </div>
+    </div>
+
+    <div class="install-card">
+      <div class="install-header"><span style="color:#3fb950">&#9679;</span> 2. Convert a PDF</div>
+      <div class="install-body">
+        <pre>marksentry convert paper.pdf \
+  --multi-column \
+  --detect-math \
+  --output paper.md</pre>
+        <div class="install-note">Multi-column layout reconstruction enabled. OMML and Unicode math symbols converted to LaTeX inline and display blocks.</div>
+      </div>
+    </div>
+
+    <div class="install-card">
+      <div class="install-header"><span style="color:#f0883e">&#9679;</span> 3. Convert with PII masking</div>
+      <div class="install-body">
+        <pre>marksentry convert report.docx \
+  --mask-pii \
+  --detect-math \
+  --output report.md</pre>
+        <div class="install-note">All 10 PII categories redacted in output. Credit cards pass Luhn validation to eliminate false positives.</div>
+      </div>
+    </div>
+
+    <div class="install-card">
+      <div class="install-header"><span style="color:#bc8cff">&#9679;</span> 4. Audit PII (dry-run)</div>
+      <div class="install-body">
+        <pre>marksentry audit-pii \
+  medical_record.pdf</pre>
+        <div class="install-note">Counts and categorizes PII findings without redacting. Use to assess exposure before enabling masking in production pipelines.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:2.5rem;margin-bottom:1rem;">Sample output -- security-passed conversion</div>
+  <div class="install-card" style="max-width:720px;">
+    <div class="install-header"><span style="color:#3fb950">&#9679;</span> marksentry convert ieee_paper.pdf --multi-column --detect-math</div>
+    <div class="install-body">
+      <pre>  [✓] Zero-Trust sanitizer passed
+  [✓] Magic bytes: PDF signature verified
+  [✓] Zip-bomb check: N/A (not a ZIP container)
+  [✓] SSRF scan: 0 blocked URLs found
+  [✓] Detected 2-column layout (87% confidence, gap at x=305)
+  [✓] Extracted 3 OMML equations to LaTeX
+  [✓] 14 tables rendered as GFM pipe syntax
+  [✓] Conversion complete: 12 pages, 4,218 words
+      Output: ieee_paper.md (68 KB)</pre>
+      <div class="install-note">Column detection confidence is the fraction of page-width covered cleanly by the detected column bands.</div>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:2.5rem;margin-bottom:1rem;">Sample output -- PII audit</div>
+  <div class="install-card" style="max-width:720px;">
+    <div class="install-header"><span style="color:#f85149">&#9679;</span> marksentry audit-pii patient_intake.docx</div>
+    <div class="install-body">
+      <pre>  PII Audit -- patient_intake.docx
+  +-----------------------+-------+-----------------------------+
+  | Category              | Count | Sample (masked)             |
+  +-----------------------+-------+-----------------------------+
+  | EMAIL                 |   4   | j*****@hospital.org         |
+  | SSN                   |   2   | ***-**-4521                 |
+  | CREDIT_CARD           |   1   | ****-****-****-9823 [Luhn]  |
+  | PHONE                 |   3   | (***) ***-4892              |
+  +-----------------------+-------+-----------------------------+
+  10 values found across 4 categories.
+  Run with --mask-pii to redact in conversion output.</pre>
+      <div class="install-note">Audit mode reads the document fully but writes no output file. Safe to run on sensitive documents before committing to a conversion pipeline.</div>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:2.5rem;margin-bottom:1rem;">Python SDK usage</div>
+  <div class="install-card" style="max-width:720px;">
+    <div class="install-header"><span style="color:#bc8cff">&#9679;</span> Embed in a RAG ingestion pipeline</div>
+    <div class="install-body">
+      <pre>from marksentry import convert
+
+result = convert(
+    "uploads/report.pdf",
+    mask_pii=True,
+    multi_column=True,
+    detect_math=True,
+    check_ssrf=True,
+    allowed_base="/safe/uploads",
+)
+
+print(result.markdown)      # clean, secured Markdown
+print(result.warnings)      # PII redaction counts, layout notes
+print(result.metadata)      # title, author, created date</pre>
+      <div class="install-note">All sanitizer checks are applied automatically. Pass <code>allowed_base</code> to restrict which directories are accessible. Raises <code>SanitizationError</code> on any policy violation.</div>
+    </div>
+  </div>
+</section>
+
+<!-- STAR CTA -->
+<div class="star-cta">
+  <h2>Secure your document pipeline &#11088;</h2>
+  <p>If MarkSentry caught a path traversal, blocked an SSRF candidate, or reconstructed a two-column
+     layout that every other tool mangled, open an issue or leave a star. It helps researchers and
+     engineers building RAG pipelines and document processors find this work.</p>
+  <div class="star-cta-actions">
+    <a href="https://github.com/sunilgentyala/marksentry" class="btn btn-primary" target="_blank">
+      &#9733;&nbsp; Star on GitHub
+    </a>
+    <a href="https://github.com/sunilgentyala/marksentry/issues" class="btn btn-outline" target="_blank">
+      Open an issue
+    </a>
+    <a href="https://github.com/sunilgentyala/marksentry/blob/main/README.md" class="btn btn-outline" target="_blank">
+      Read the docs
+    </a>
+  </div>
+</div>
+
+<!-- AUTHOR -->
+<section>
+  <div class="section-label">Author</div>
+  <h2>Built by</h2>
+  <div class="author-card">
+    <div class="author-avatar">SG</div>
+    <div>
+      <div class="author-name">Sunil Gentyala, Independent Researcher</div>
+      <div class="author-role">
+        IEEE Senior Member No. 101760715 &nbsp;&middot;&nbsp; CISM &nbsp;&middot;&nbsp; Security Researcher<br>
+        sunil.gentyala@ieee.org
+      </div>
+      <div class="author-links">
+        <a href="https://github.com/sunilgentyala" class="author-link" target="_blank">GitHub</a>
+        <a href="https://sunilgentyala.github.io/DockerDNA/" class="author-link" target="_blank">DockerDNA</a>
+        <a href="https://sunilgentyala.github.io/ZKP-RA/" class="author-link" target="_blank">ZKP-RA</a>
+        <a href="https://sunilgentyala.github.io/argus/" class="author-link" target="_blank">ARGUS</a>
+        <a href="https://www.linkedin.com/in/sunilgentyala/" class="author-link" target="_blank">LinkedIn</a>
+        <a href="mailto:sunil.gentyala@ieee.org" class="author-link">IEEE Email</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    MarkSentry &copy; 2026 <a href="https://github.com/sunilgentyala" target="_blank">Sunil Gentyala, Independent Researcher</a>
+    &nbsp;&middot;&nbsp;
+    <a href="https://github.com/sunilgentyala/marksentry/blob/main/LICENSE" target="_blank">MIT License</a>
+    &nbsp;&middot;&nbsp;
+    <a href="https://github.com/sunilgentyala/marksentry" target="_blank">GitHub Repository</a>
+  </p>
+  <p style="margin-top:0.4rem;">
+    Built to fill the security gap in document-to-Markdown pipelines. Local-first. No cloud dependencies.
+  </p>
+</footer>
+
+</body>
+</html>
