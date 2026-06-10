@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "marksentry"
+version = "1.0.0"
+description = "Secure, local-first document-to-Markdown conversion with zero-trust input sanitization, multi-column layout intelligence, and PII masking."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Sunil Gentyala", email = "sunil.gentyala@ieee.org" }
+]
+maintainers = [
+    { name = "Sunil Gentyala", email = "sunil.gentyala@ieee.org" }
+]
+keywords = [
+    "markdown", "pdf", "docx", "conversion", "security",
+    "pii-masking", "multi-column", "latex", "rag", "local-first"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "pdfminer.six>=20221105",
+    "python-docx>=1.1.0",
+    "click>=8.1.0",
+    "rich>=13.7.0",
+    "lxml>=5.1.0",
+    "Pillow>=10.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "mypy>=1.8.0",
+    "ruff>=0.4.0",
+]
+ocr = [
+    "pytesseract>=0.3.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/sunilgentyala/marksentry"
+Repository = "https://github.com/sunilgentyala/marksentry"
+"Bug Tracker" = "https://github.com/sunilgentyala/marksentry/issues"
+
+[project.scripts]
+marksentry = "marksentry.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["marksentry*"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "S", "UP"]
+ignore = ["S101"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=marksentry --cov-report=term-missing"
