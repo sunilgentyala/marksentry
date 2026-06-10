@@ -153,6 +153,89 @@ with open("output.md", "w") as f:
 
 ---
 
+## Claude Code MCP Integration
+
+MarkSentry ships a Model Context Protocol (MCP) server so Claude Code can convert documents
+**before** sending their content to the model. This eliminates the token cost of reading raw
+binary files: a 20-page IEEE paper that would consume 15,000+ tokens as raw bytes arrives as
+~2,000 tokens of clean Markdown.
+
+### Why it saves tokens
+
+| Without MCP | With MCP |
+|---|---|
+| Claude reads raw PDF bytes or you paste text manually | Claude calls `convert_to_markdown` and receives clean Markdown |
+| Every page consumes image or binary tokens | Only the extracted text is sent |
+| Tables and math arrive garbled or are skipped | Tables are GFM-formatted, equations are LaTeX |
+| PII may reach the model | Optional `mask_pii=True` redacts before conversion |
+
+### Setup
+
+**1. Install MarkSentry from source (once):**
+
+```bash
+git clone https://github.com/sunilgentyala/marksentry
+cd marksentry
+pip install -e .
+pip install mcp
+```
+
+**2. Register with Claude Code:**
+
+```bash
+# Available in all projects (recommended)
+claude mcp add --scope user marksentry python /path/to/marksentry/marksentry_mcp.py
+
+# Or project-scoped only
+claude mcp add marksentry python /path/to/marksentry/marksentry_mcp.py
+```
+
+**3. Verify:**
+
+```bash
+claude mcp get marksentry
+# Status: Connected
+```
+
+Restart Claude Code after registration for the tools to load.
+
+### MCP Tools
+
+| Tool | When to use |
+|---|---|
+| `convert_to_markdown` | Primary tool. Converts PDF, DOCX, or ZIP to clean Markdown. Use whenever a document path is shared. |
+| `audit_pii` | Pre-flight PII scan. Reports pattern types and hit counts without producing full output. |
+| `document_info` | Metadata only. Returns file type, size, macro status, and any SSRF-risk URLs. Fast preflight before converting large files. |
+
+### Usage examples
+
+Once the MCP server is connected, just share a file path:
+
+```
+"Summarise this paper: /home/user/papers/research.pdf"
+→ Claude calls convert_to_markdown, receives Markdown, answers from text
+```
+
+```
+"Does this DOCX contain any PII? /home/user/docs/report.docx"
+→ Claude calls audit_pii first, reports findings
+```
+
+```
+"What type of file is this and is it safe to convert? /tmp/unknown.zip"
+→ Claude calls document_info for a fast preflight check
+```
+
+Parameters for `convert_to_markdown`:
+
+| Parameter | Default | Description |
+|---|---|---|
+| `path` | required | Absolute or relative path to the document |
+| `mask_pii` | `false` | Replace detected PII with `[REDACTED:TYPE]` placeholders |
+| `include_page_breaks` | `false` | Emit `---` between pages in PDF output |
+
+---
+
 ## Feature Deep Dives
 
 ### Zero-Trust Input Sanitizer
