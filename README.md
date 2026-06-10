@@ -1,26 +1,56 @@
 # MarkSentry
 
-> **Secure, local-first document-to-Markdown conversion.**  
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
+  <img src="https://img.shields.io/badge/execution-100%25%20local-brightgreen" alt="Local-first">
+  <img src="https://img.shields.io/badge/MCP-Claude%20Code-blueviolet?logo=anthropic" alt="Claude Code MCP">
+  <img src="https://img.shields.io/badge/zero--trust-input%20sanitizer-red" alt="Zero-trust">
+</p>
+
+> **Secure, local-first document-to-Markdown conversion.**
 > Zero cloud dependencies. Zero-trust input sanitization. Correct multi-column layout. Full LaTeX math support.
 
 Built to address the layout bugs, mathematical omissions, and critical security vulnerabilities (SSRF, path traversal, cloud-API lock-in) found in existing conversion utilities.
 
 ---
 
+## Table of Contents
+
+- [Why MarkSentry?](#why-marksentry)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+  - [CLI](#cli)
+  - [Python SDK](#python-sdk)
+- [Claude Code MCP Integration](#claude-code-mcp-integration)
+- [Feature Deep Dives](#feature-deep-dives)
+  - [Zero-Trust Input Sanitizer](#zero-trust-input-sanitizer)
+  - [Multi-Column Layout Processor](#multi-column-layout-processor)
+  - [Table Reconstruction](#table-reconstruction)
+  - [LaTeX Math Output](#latex-math-output)
+  - [PII Masking](#pii-masking)
+- [CLI Reference](#cli-reference)
+- [Development](#development)
+- [License](#license)
+- [Author](#author-and-attribution)
+
+---
+
 ## Why MarkSentry?
 
-| Capability | MarkSentry | Microsoft MarkItDown | typical Python converters |
-|---|---|---|---|
-| Path traversal prevention | YES -- full jail + null-byte checks | No | No |
-| SSRF mitigation | YES -- embedded URI scanner, RFC-1918 block | No | No |
-| VBA macro stripping | YES -- OOXML rewrite before parse | No | No |
-| Zip bomb detection | YES -- ratio + nesting depth | No | No |
-| Multi-column PDF layout | YES -- gap-analysis algorithm | No -- reads across columns | No |
-| LaTeX math output | YES -- OMML + Unicode to LaTeX | Omits equations | Omits equations |
-| GFM table reconstruction | YES -- coordinate-aligned grid | Partial | Partial |
-| PII masking (pre-RAG) | YES -- 10 pattern categories | No | No |
-| 100% local execution | YES -- zero network calls | No -- calls Azure OCR | Varies |
-| Magic-byte validation | YES -- extension + header check | No | No |
+| Capability | MarkSentry | Microsoft MarkItDown | Typical Python converters |
+|---|:---:|:---:|:---:|
+| Path traversal prevention | ✅ full jail + null-byte checks | ❌ | ❌ |
+| SSRF mitigation | ✅ embedded URI scanner, RFC-1918 block | ❌ | ❌ |
+| VBA macro stripping | ✅ OOXML rewrite before parse | ❌ | ❌ |
+| Zip bomb detection | ✅ ratio + nesting depth | ❌ | ❌ |
+| Multi-column PDF layout | ✅ gap-analysis algorithm | ❌ reads across columns | ❌ |
+| LaTeX math output | ✅ OMML + Unicode to LaTeX | ❌ omits equations | ❌ omits equations |
+| GFM table reconstruction | ✅ coordinate-aligned grid | Partial | Partial |
+| PII masking (pre-RAG) | ✅ 10 pattern categories | ❌ | ❌ |
+| 100% local execution | ✅ zero network calls | ❌ calls Azure OCR | Varies |
+| Magic-byte validation | ✅ extension + header check | ❌ | ❌ |
 
 ---
 
@@ -155,23 +185,23 @@ with open("output.md", "w") as f:
 
 ## Claude Code MCP Integration
 
-MarkSentry ships a Model Context Protocol (MCP) server so Claude Code can convert documents
-**before** sending their content to the model. This eliminates the token cost of reading raw
-binary files: a 20-page IEEE paper that would consume 15,000+ tokens as raw bytes arrives as
-~2,000 tokens of clean Markdown.
+MarkSentry ships a [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server so
+Claude Code can convert documents **before** sending their content to the model. This eliminates
+the token cost of reading raw binary files: a 20-page IEEE paper that would consume 15,000+
+tokens as raw bytes arrives as ~2,000 tokens of clean Markdown.
 
 ### Why it saves tokens
 
 | Without MCP | With MCP |
 |---|---|
-| Claude reads raw PDF bytes or you paste text manually | Claude calls `convert_to_markdown` and receives clean Markdown |
+| Claude reads raw PDF bytes or you paste text manually | Claude calls `convert_to_markdown`, receives clean Markdown |
 | Every page consumes image or binary tokens | Only the extracted text is sent |
 | Tables and math arrive garbled or are skipped | Tables are GFM-formatted, equations are LaTeX |
 | PII may reach the model | Optional `mask_pii=True` redacts before conversion |
 
 ### Setup
 
-**1. Install MarkSentry from source (once):**
+**1. Install MarkSentry and the MCP package:**
 
 ```bash
 git clone https://github.com/sunilgentyala/marksentry
@@ -183,12 +213,15 @@ pip install mcp
 **2. Register with Claude Code:**
 
 ```bash
-# Available in all projects (recommended)
+# macOS / Linux
 claude mcp add --scope user marksentry python /path/to/marksentry/marksentry_mcp.py
 
-# Or project-scoped only
-claude mcp add marksentry python /path/to/marksentry/marksentry_mcp.py
+# Windows — use the full path to your Python executable to avoid shell stubs
+claude mcp add --scope user marksentry "C:\Python\python.exe" "C:\path\to\marksentry\marksentry_mcp.py"
 ```
+
+> **Windows note:** Using just `python` can resolve to the Windows Store stub that has no
+> packages installed. Run `where python` and pass the full path returned.
 
 **3. Verify:**
 
@@ -197,42 +230,38 @@ claude mcp get marksentry
 # Status: Connected
 ```
 
-Restart Claude Code after registration for the tools to load.
+Restart Claude Code after registration for the tools to load into the session.
 
 ### MCP Tools
 
-| Tool | When to use |
+| Tool | Purpose |
 |---|---|
 | `convert_to_markdown` | Primary tool. Converts PDF, DOCX, or ZIP to clean Markdown. Use whenever a document path is shared. |
 | `audit_pii` | Pre-flight PII scan. Reports pattern types and hit counts without producing full output. |
-| `document_info` | Metadata only. Returns file type, size, macro status, and any SSRF-risk URLs. Fast preflight before converting large files. |
+| `document_info` | Metadata preflight. Returns file type, size, macro status, and any SSRF-risk URLs. |
 
-### Usage examples
-
-Once the MCP server is connected, just share a file path:
-
-```
-"Summarise this paper: /home/user/papers/research.pdf"
-→ Claude calls convert_to_markdown, receives Markdown, answers from text
-```
-
-```
-"Does this DOCX contain any PII? /home/user/docs/report.docx"
-→ Claude calls audit_pii first, reports findings
-```
-
-```
-"What type of file is this and is it safe to convert? /tmp/unknown.zip"
-→ Claude calls document_info for a fast preflight check
-```
-
-Parameters for `convert_to_markdown`:
+### Parameters for `convert_to_markdown`
 
 | Parameter | Default | Description |
-|---|---|---|
+|---|:---:|---|
 | `path` | required | Absolute or relative path to the document |
 | `mask_pii` | `false` | Replace detected PII with `[REDACTED:TYPE]` placeholders |
 | `include_page_breaks` | `false` | Emit `---` between pages in PDF output |
+
+### Usage examples
+
+Once the MCP server is connected, just share a file path in your prompt:
+
+```
+"Summarise this paper: /home/user/papers/research.pdf"
+  → Claude calls convert_to_markdown, receives Markdown, answers from text
+
+"Does this DOCX contain any PII? /home/user/docs/report.docx"
+  → Claude calls audit_pii first, reports findings before converting
+
+"What type of file is this and is it safe to convert? /tmp/unknown.zip"
+  → Claude calls document_info for a fast preflight check
+```
 
 ---
 
@@ -242,17 +271,20 @@ Parameters for `convert_to_markdown`:
 
 Every file passes through the sanitizer before reaching any parser:
 
-- **Path traversal prevention** -- resolves symlinks, rejects `../`, null bytes, UNC paths (`\\server\share`), and explicit URI schemes (`file://`, `http://`)
-- **Path jail** -- pass `allowed_base` to restrict file access to a directory tree; any escape raises `SanitizationError`
-- **Magic-byte validation** -- compares file header bytes against the expected signature for the declared extension; rejects spoofed files
-- **SSRF mitigation** -- scans all XML, relationship, and HTML entries inside OOXML archives for embedded URLs; blocks RFC-1918, loopback, link-local (169.254.x.x), and `file://` references
-- **Macro stripping** -- detects `vbaProject.bin` and macro content-type declarations inside OOXML archives; rewrites the archive without them before parsing
-- **Zip bomb detection** -- enforces a maximum uncompressed:compressed expansion ratio (default 100x) and nesting depth (default 3)
-- **File size ceiling** -- configurable hard limit (default 256 MiB) to prevent memory exhaustion
+| Check | Detail |
+|---|---|
+| **Path traversal** | Resolves symlinks, rejects `../`, null bytes, UNC paths, and `file://`/`http://` schemes |
+| **Path jail** | Pass `allowed_base` to restrict access to a directory tree; any escape raises `SanitizationError` |
+| **Magic-byte validation** | Compares file header bytes against the expected signature; rejects spoofed extensions |
+| **SSRF mitigation** | Scans XML/relationship/HTML entries in OOXML archives; blocks RFC-1918, loopback, link-local, and `file://` URLs |
+| **Macro stripping** | Detects `vbaProject.bin` and macro content-type declarations; rewrites the archive without them |
+| **Zip bomb detection** | Enforces a max uncompressed:compressed ratio (default 100x) and nesting depth (default 3) |
+| **File size ceiling** | Configurable hard limit (default 256 MiB) to prevent memory exhaustion |
 
 ### Multi-Column Layout Processor
 
-Academic papers, journal articles, and technical reports commonly use 2- or 3-column layouts. Naive parsers read text horizontally, producing garbled output like:
+Academic papers commonly use 2- or 3-column layouts. Naive parsers read text horizontally,
+producing garbled output:
 
 ```
 Introduction  Methodology  Results
@@ -266,26 +298,31 @@ MarkSentry uses a gap-analysis algorithm:
 3. Declare each gap a column separator
 4. Assign every text block to the column it overlaps most
 5. Sort within each column top-to-bottom
-6. Separate full-width blocks (titles, section headers, captions) from column content and interleave them at their correct vertical position
+6. Interleave full-width blocks (titles, section headers, captions) at their correct vertical position
 
 The result is correct sequential flow through each column before moving to the next.
 
 ### Table Reconstruction
 
-The `TableDetector` clusters text blocks by shared y-bands (rows) and x-positions (columns), identifies grid regions where at least 3 rows each contain 2+ aligned cells, and emits standard GitHub-Flavored Markdown pipe tables:
+The `TableDetector` clusters text blocks by shared y-bands (rows) and x-positions (columns),
+identifies grid regions where at least 3 rows each contain 2+ aligned cells, and emits
+standard GitHub-Flavored Markdown pipe tables:
 
 ```markdown
-| Method | Precision | Recall | F1 |
-| --- | --- | --- | --- |
-| Baseline | 0.82 | 0.79 | 0.80 |
-| MarkSentry | 0.94 | 0.91 | 0.92 |
+| Method     | Precision | Recall | F1   |
+|------------|-----------|--------|------|
+| Baseline   | 0.82      | 0.79   | 0.80 |
+| MarkSentry | 0.94      | 0.91   | 0.92 |
 ```
 
 ### LaTeX Math Output
 
-**PDF documents** -- Unicode mathematical symbols (Greek letters, operators, set notation, integrals, sums) are mapped to their LaTeX equivalents. Inline-length formulas are wrapped in `$...$`; display-length formulas use `$$...$$`.
+**PDF documents:** Unicode mathematical symbols (Greek letters, operators, set notation,
+integrals, sums) are mapped to LaTeX equivalents. Inline-length formulas use `$...$`;
+display-length formulas use `$$...$$`.
 
-**DOCX documents** -- Office Math Markup Language (OMML) equations are converted via a recursive XML descent parser covering:
+**DOCX documents:** Office Math Markup Language (OMML) equations are converted via a
+recursive XML descent parser:
 
 | OMML element | LaTeX output |
 |---|---|
@@ -300,7 +337,8 @@ The `TableDetector` clusters text blocks by shared y-bands (rows) and x-position
 
 ### PII Masking
 
-Ten pattern categories with validation:
+Ten pattern categories, all with validation (credit cards are Luhn-checked to eliminate
+false positives):
 
 | Category | Example input | Masked output |
 |---|---|---|
@@ -314,8 +352,6 @@ Ten pattern categories with validation:
 | `IPV4` | `192.168.1.100` | `[REDACTED:IPV4]` |
 | `PASSWORD_ASSIGNMENT` | `password=s3cr3t!` | `[REDACTED:PASSWORD_ASSIGNMENT]` |
 | `HIGH_ENTROPY_HEX` | `a3f2c1d4e5b6a7f8...` | `[REDACTED:HIGH_ENTROPY_HEX]` |
-
-Credit card numbers are Luhn-validated before masking to eliminate false positives.
 
 Use `marksentry audit-pii` for a dry run that reports findings without modifying any output.
 
@@ -332,6 +368,8 @@ Commands:
   info       Display document metadata and security scan summary.
 
 marksentry convert [OPTIONS] FILES...
+
+Options:
   -o, --output PATH          Output file (single input only)
   --output-dir DIR           Output directory for batch conversion
   --mask-pii                 Enable PII masking
@@ -377,7 +415,13 @@ MIT License. See `LICENSE` for details.
 
 **MarkSentry** was designed and built by **Sunil Gentyala**.
 
-Sunil Gentyala is a principal software architect and cybersecurity researcher at HCL America Inc., with expertise in secure systems design, document intelligence pipelines, and adversarial robustness. MarkSentry was created to solve real security gaps in existing document conversion tooling -- in particular the complete absence of input sanitization, SSRF defenses, and correct multi-column layout handling in tools like Microsoft MarkItDown -- and to provide a production-grade, offline-first foundation for RAG data pipelines that must handle sensitive documents safely.
+Sunil Gentyala is a principal software architect and cybersecurity researcher at HCL America
+Inc., with expertise in secure systems design, document intelligence pipelines, and adversarial
+robustness. MarkSentry was created to solve real security gaps in existing document conversion
+tooling -- in particular the complete absence of input sanitization, SSRF defenses, and correct
+multi-column layout handling in tools like Microsoft MarkItDown -- and to provide a
+production-grade, offline-first foundation for RAG data pipelines that must handle sensitive
+documents safely.
 
-Contact: sunil.gentyala@ieee.org  
+Contact: sunil.gentyala@ieee.org
 GitHub: [github.com/sunilgentyala](https://github.com/sunilgentyala)
