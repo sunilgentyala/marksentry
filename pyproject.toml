@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "marksentry"
@@ -52,6 +52,9 @@ dev = [
 ]
 ocr = [
     "pytesseract>=0.3.10",
+]
+demo = [
+    "streamlit>=1.38.0",
 ]
 
 [project.urls]

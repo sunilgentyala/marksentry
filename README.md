@@ -18,6 +18,7 @@ Built to address the layout bugs, mathematical omissions, and critical security 
 ## Table of Contents
 
 - [Why MarkSentry?](#why-marksentry)
+- [Live Demo](#live-demo)
 - [Architecture](#architecture)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
@@ -32,6 +33,7 @@ Built to address the layout bugs, mathematical omissions, and critical security 
   - [PII Masking](#pii-masking)
 - [CLI Reference](#cli-reference)
 - [Development](#development)
+- [Contributing](#contributing)
 - [License](#license)
 - [Author](#author-and-attribution)
 
@@ -51,6 +53,23 @@ Built to address the layout bugs, mathematical omissions, and critical security 
 | PII masking (pre-RAG) | ✅ 10 pattern categories | ❌ | ❌ |
 | 100% local execution | ✅ zero network calls | ❌ calls Azure OCR | Varies |
 | Magic-byte validation | ✅ extension + header check | ❌ | ❌ |
+
+---
+
+## Live Demo
+
+Try it in the browser without installing anything: **[link to be added once deployed]**.
+
+To run the demo locally instead:
+
+```bash
+git clone https://github.com/sunilgentyala/marksentry
+cd marksentry
+pip install -e ".[demo]"
+streamlit run demo/streamlit_app.py
+```
+
+Upload a PDF, DOCX, or ZIP and see the sanitized Markdown, security warnings, and PII scan results update live. Nothing is uploaded anywhere outside your own machine or your own Streamlit deployment.
 
 ---
 
@@ -402,6 +421,12 @@ mypy marksentry/
 # Linting
 ruff check marksentry/
 ```
+
+---
+
+## Contributing
+
+Issues and pull requests are welcome — new PII pattern categories, additional parsers (PPTX, RTF, EPUB), multi-column edge cases, and new MCP tools are all open areas. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and PR guidelines.
 
 ---
 
