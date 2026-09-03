@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "marksentry"
-version = "1.0.0"
+version = "1.1.0"
 description = "Secure, local-first document-to-Markdown conversion with zero-trust input sanitization, multi-column layout intelligence, and PII masking."
 readme = "README.md"
 license = { text = "MIT" }

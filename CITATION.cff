@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use this software in your research or pipeline, please cite it as below."
 type: software
 title: "MarkSentry: Secure, Local-First Document-to-Markdown Conversion"
-version: 1.0.0
-date-released: "2026-06-10"
+version: 1.1.0
+date-released: "2026-09-02"
 repository-code: "https://github.com/sunilgentyala/marksentry"
 url: "https://sunilgentyala.github.io/marksentry/"
 license: MIT
