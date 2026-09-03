@@ -1,0 +1,41 @@
+name: Bug report
+description: Something in conversion, sanitization, or layout detection isn't working as documented.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you run, and what went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: MarkSentry version
+      description: Output of `pip show marksentry` or the commit hash.
+    validations:
+      required: true
+  - type: dropdown
+    id: input-type
+    attributes:
+      label: Input file type
+      options:
+        - PDF
+        - DOCX
+        - DOCM
+        - ZIP
+        - Other/N-A
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: A small sample file (with any real content removed/redacted) or the CLI/SDK invocation that triggers it.

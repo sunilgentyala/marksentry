@@ -1,0 +1,22 @@
+name: Feature request
+description: A new parser, PII pattern, MCP tool, or layout edge case you'd like supported.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's the gap?
+      description: What document type, pattern, or workflow isn't handled today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Optional -- how you'd expect it to work (CLI flag, SDK parameter, new pattern category, etc.)
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd be willing to open a PR for this

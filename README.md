@@ -1,11 +1,17 @@
 # MarkSentry
 
 <p align="center">
+  <a href="https://github.com/sunilgentyala/marksentry/actions/workflows/ci.yml"><img src="https://github.com/sunilgentyala/marksentry/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
   <img src="https://img.shields.io/badge/execution-100%25%20local-brightgreen" alt="Local-first">
   <img src="https://img.shields.io/badge/MCP-Claude%20Code-blueviolet?logo=anthropic" alt="Claude Code MCP">
   <img src="https://img.shields.io/badge/zero--trust-input%20sanitizer-red" alt="Zero-trust">
+</p>
+<p align="center">
+  <a href="https://github.com/sunilgentyala/marksentry/stargazers">
+    <img src="https://img.shields.io/github/stars/sunilgentyala/marksentry?style=social" alt="GitHub stars">
+  </a>
 </p>
 
 > **Secure, local-first document-to-Markdown conversion.**
@@ -35,32 +41,40 @@ Built to address the layout bugs, mathematical omissions, and critical security 
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
+- [Citation](#citation)
 - [Author](#author-and-attribution)
 
 ---
 
 ## Why MarkSentry?
 
-| Capability | MarkSentry | Microsoft MarkItDown | Typical Python converters |
-|---|:---:|:---:|:---:|
-| Path traversal prevention | ✅ full jail + null-byte checks | ❌ | ❌ |
-| SSRF mitigation | ✅ embedded URI scanner, RFC-1918 block | ❌ | ❌ |
-| VBA macro stripping | ✅ OOXML rewrite before parse | ❌ | ❌ |
-| Zip bomb detection | ✅ ratio + nesting depth | ❌ | ❌ |
-| Multi-column PDF layout | ✅ gap-analysis algorithm | ❌ reads across columns | ❌ |
-| LaTeX math output | ✅ OMML + Unicode to LaTeX | ❌ omits equations | ❌ omits equations |
-| GFM table reconstruction | ✅ coordinate-aligned grid | Partial | Partial |
-| PII masking (pre-RAG) | ✅ 10 pattern categories | ❌ | ❌ |
-| 100% local execution | ✅ zero network calls | ❌ calls Azure OCR | Varies |
-| Magic-byte validation | ✅ extension + header check | ❌ | ❌ |
+MarkSentry isn't trying to out-fidelity GPU-accelerated converters like [Marker](https://github.com/datalab-to/marker)
+or IBM's layout-model-driven [Docling](https://github.com/docling-project/docling) -- it's the option for pipelines
+where the document might be untrusted (a user upload, an email attachment, a scraped file) and the security
+properties of the conversion step matter as much as the Markdown quality.
+
+| Capability | MarkSentry | Microsoft MarkItDown | Docling / Marker | Typical Python converters |
+|---|:---:|:---:|:---:|:---:|
+| Path traversal prevention | ✅ full jail + null-byte checks | ❌ | ❌ | ❌ |
+| SSRF mitigation | ✅ embedded URI scanner, RFC-1918 block | ❌ | ❌ | ❌ |
+| VBA macro stripping | ✅ OOXML rewrite before parse | ❌ | ❌ | ❌ |
+| Zip bomb detection | ✅ ratio + nesting depth | ❌ | ❌ | ❌ |
+| Multi-column PDF layout | ✅ gap-analysis algorithm | ❌ reads across columns | ✅ (ML layout model) | ❌ |
+| LaTeX math output | ✅ OMML + Unicode to LaTeX | ❌ omits equations | ✅ (Marker) / Partial (Docling) | ❌ omits equations |
+| GFM table reconstruction | ✅ coordinate-aligned grid | Partial | ✅ (ML-driven) | Partial |
+| PII masking (pre-RAG) | ✅ 10 pattern categories | ❌ | ❌ | ❌ |
+| 100% local execution | ✅ zero network calls | ❌ calls Azure OCR | ✅ (Docling) / needs GPU (Marker) | Varies |
+| Magic-byte validation | ✅ extension + header check | ❌ | ❌ | ❌ |
+
+If you need the highest-fidelity extraction on trusted, GPU-available infrastructure, Docling or Marker will likely
+out-perform MarkSentry on layout accuracy. If the file is coming from outside your trust boundary, or you need to
+run entirely offline on modest hardware, that's what MarkSentry is for.
 
 ---
 
 ## Live Demo
 
-Try it in the browser without installing anything: **[link to be added once deployed]**.
-
-To run the demo locally instead:
+A hosted demo isn't up yet -- run it locally in under a minute instead:
 
 ```bash
 git clone https://github.com/sunilgentyala/marksentry
@@ -426,13 +440,21 @@ ruff check marksentry/
 
 ## Contributing
 
-Issues and pull requests are welcome — new PII pattern categories, additional parsers (PPTX, RTF, EPUB), multi-column edge cases, and new MCP tools are all open areas. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and PR guidelines.
+Issues and pull requests are welcome — new PII pattern categories, additional parsers (PPTX, RTF, EPUB), multi-column edge cases, and new MCP tools are all open areas. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and PR guidelines, or use the [issue templates](https://github.com/sunilgentyala/marksentry/issues/new/choose) to report a bug or propose a feature. General questions and ideas belong in [Discussions](https://github.com/sunilgentyala/marksentry/discussions).
+
+[![Star History Chart](https://api.star-history.com/svg?repos=sunilgentyala/marksentry&type=Date)](https://star-history.com/#sunilgentyala/marksentry&Date)
 
 ---
 
 ## License
 
 MIT License. See `LICENSE` for details.
+
+---
+
+## Citation
+
+If MarkSentry is useful in your research or pipeline, please cite it — see [CITATION.cff](CITATION.cff) or use GitHub's "Cite this repository" button in the sidebar.
 
 ---
 

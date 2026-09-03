@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this software in your research or pipeline, please cite it as below."
+type: software
+title: "MarkSentry: Secure, Local-First Document-to-Markdown Conversion"
+version: 1.0.0
+date-released: "2026-06-10"
+repository-code: "https://github.com/sunilgentyala/marksentry"
+url: "https://sunilgentyala.github.io/marksentry/"
+license: MIT
+authors:
+  - family-names: Gentyala
+    given-names: Sunil
+    affiliation: "HCLTech (HCL America Inc.), Dallas, TX, USA"
+    orcid: "https://orcid.org/0009-0005-2642-3479"
+    email: sunil.gentyala@ieee.org
+abstract: >
+  MarkSentry is a local-first document-to-Markdown converter for PDF, DOCX,
+  and ZIP inputs. It applies zero-trust input sanitization (path-traversal
+  jailing, SSRF mitigation, VBA macro stripping, zip-bomb detection,
+  magic-byte validation) before parsing, reconstructs multi-column PDF
+  layouts and GFM tables, converts OMML/Unicode math to LaTeX, and offers
+  optional PII masking for RAG ingestion pipelines. No network calls are
+  made during conversion.
+keywords:
+  - document-conversion
+  - markdown
+  - pdf-to-markdown
+  - docx
+  - zero-trust
+  - ssrf-protection
+  - pii-masking
+  - local-first
+  - rag
+  - latex
