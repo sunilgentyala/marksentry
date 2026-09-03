@@ -183,7 +183,13 @@ class LayoutProcessor:
                 regular_blocks.append(block)
 
         if not regular_blocks:
-            layout.full_width_blocks.sort(key=lambda b: -b.bbox.y1)
+            # Every block cleared the full-width threshold, but with nothing
+            # narrower to compare against, there's no evidence of an actual
+            # multi-column layout -- this is a single column whose blocks
+            # simply span most of the page width. Treat it as one column
+            # rather than discarding column structure entirely.
+            layout.columns = [sorted(layout.full_width_blocks, key=lambda b: -b.bbox.y1)]
+            layout.full_width_blocks = []
             return layout
 
         column_bounds = self._detect_columns(regular_blocks, page_width)

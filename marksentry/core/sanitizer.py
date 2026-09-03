@@ -38,9 +38,12 @@ MAX_ZIP_ENTRY_COUNT: Final[int] = 10_000
 _MAGIC: Final[dict[str, bytes]] = {
     "pdf":  b"%PDF",
     "docx": b"PK\x03\x04",   # ZIP-based (OOXML)
+    "docm": b"PK\x03\x04",   # Macro-enabled — accepted so _strip_macros can run
     "zip":  b"PK\x03\x04",
     "xlsx": b"PK\x03\x04",
+    "xlsm": b"PK\x03\x04",
     "pptx": b"PK\x03\x04",
+    "pptm": b"PK\x03\x04",
     "rtf":  b"{\\rtf",
     "odt":  b"PK\x03\x04",
     "txt":  None,              # No magic — validated by UTF-8 decode attempt
@@ -155,7 +158,7 @@ def sanitize(
 
     result = SanitizationResult(safe_path=path, detected_type=detected_type)
 
-    if detected_type in ("docx", "xlsx", "pptx", "odt", "zip"):
+    if detected_type in ("docx", "docm", "xlsx", "xlsm", "pptx", "pptm", "odt", "zip"):
         _check_zip_bomb(path)
         if strip_macros:
             result.macros_stripped = _strip_macros(path)
