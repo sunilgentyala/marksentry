@@ -159,6 +159,15 @@ pip install marksentry[ocr]
 
 ---
 
+## Docker (GitHub Packages)
+
+A prebuilt container image is published to the GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/sunilgentyala/marksentry:latest
+docker run --rm -v "$PWD:/work" ghcr.io/sunilgentyala/marksentry convert paper.pdf
+```
+
 ## Quick Start
 
 ### CLI
