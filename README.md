@@ -461,9 +461,21 @@ MIT License. See `LICENSE` for details.
 
 ---
 
-## Citation
+## How to Cite
 
-If MarkSentry is useful in your research or pipeline, please cite it — see [CITATION.cff](CITATION.cff) or use GitHub's "Cite this repository" button in the sidebar.
+If you use MarkSentry in your research, please cite the software:
+
+```bibtex
+@software{gentyala2026marksentry,
+  author    = {Gentyala, Sunil},
+  title     = {MarkSentry: Secure, Local-First Document-to-Markdown Conversion},
+  year      = {2026},
+  version   = {1.1.0},
+  url       = {https://github.com/sunilgentyala/marksentry}
+}
+```
+
+Machine-readable metadata is in [`CITATION.cff`](CITATION.cff); GitHub shows it under "Cite this repository".
 
 ---
 
