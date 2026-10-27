@@ -6,6 +6,7 @@ import os
 import tempfile
 import zipfile
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pytest
 
@@ -159,8 +160,9 @@ def test_find_ssrf_urls_in_text() -> None:
         'href="https://safe.example.com/page"'
     )
     blocked = _find_ssrf_urls(text)
-    assert any("169.254" in u for u in blocked)
-    assert not any("safe.example.com" in u for u in blocked)
+    hosts = {urlparse(u).hostname for u in blocked}
+    assert "169.254.169.254" in hosts
+    assert "safe.example.com" not in hosts
 
 
 # ---------------------------------------------------------------------------
